@@ -25,8 +25,7 @@ This project is my implementation of the Cloud Resume Hosting, a hands-on projec
 
 ## Architecture
 
-![Cloud Resume Hosting Architecture]
-![alt text](<Cloud Resume Hosting.png>)
+![Cloud Resume Hosting](https://github.com/user-attachments/assets/4f1eb0f3-397a-41bd-801c-167b0d10a31c)
 
 The project uses the following AWS services:
 
