@@ -10,38 +10,31 @@
     - [Step 1: Create and Style Your Resume](#step-1-create-and-style-your-resume)
     - [Step 2: Set Up S3 Static Website Hosting](#step-2-set-up-s3-static-website-hosting)
     - [Step 3: Configure CloudFront](#step-3-configure-cloudfront)
-    - [Step 4: Set Up Custom Domain with Route 53](#step-4-set-up-custom-domain-with-route-53)
-    - [Step 5: Create DynamoDB Table](#step-5-create-dynamodb-table)
-    - [Step 6: Create Lambda Function](#step-6-create-lambda-function)
-    - [Step 7: Set Up API Gateway](#step-7-set-up-api-gateway)
-    - [Step 8: Add Visitor Counter to Your Resume](#step-8-add-visitor-counter-to-your-resume)
+    - [Step 4: Set Up Custom Domain with GoDaddy and Route 53](#step-4-set-up-custom-domain-with-godaddy-and-route-53)
+    - [Step 5: Request SSL Certificate with AWS Certificate Manager](#step-5-request-ssl-certificate-with-aws-certificate-manager)
   - [Testing](#testing)
   - [Future Improvements](#future-improvements)
   - [Resources](#resources)
 
 ## Project Overview
 
-This project is my implementation of the Cloud Resume Hosting, a hands-on project designed to help learn and showcase cloud skills, particularly with AWS. The challenge involves creating a personal resume website hosted entirely on AWS, incorporating various services to create a full-stack serverless application.
+This project is my implementation of the Cloud Resume Hosting, a hands-on project designed to help learn and showcase cloud skills, particularly with AWS. The challenge involves creating a personal resume website hosted entirely on AWS, incorporating various services to create a static website with content delivery capabilities, using a custom domain registered with GoDaddy.
 
 ## Architecture
 
-![Cloud Resume Hosting](https://github.com/user-attachments/assets/4f1eb0f3-397a-41bd-801c-167b0d10a31c)
-
-The project uses the following AWS services:
+The project uses the following AWS services and external components:
 
 - **S3**: Hosts the static website files (HTML, CSS, JavaScript)
 - **CloudFront**: Provides content delivery and HTTPS
-- **Route 53**: Manages the domain and DNS
-- **API Gateway**: Creates a RESTful API
-- **Lambda**: Runs serverless functions
-- **DynamoDB**: Stores the visitor counter data
+- **Route 53**: Manages DNS settings
+- **AWS Certificate Manager**: Provides SSL/TLS certificate
+- **GoDaddy**: Domain registrar [ This is what i used . You can also get your domain from Route 53 at prices starting from $15 ]
 
 ## Prerequisites
 
 - An AWS account
 - Basic knowledge of HTML, CSS, and JavaScript
-- Familiarity with Python
-- A domain name (for the custom domain setup)
+- A domain name registered with GoDaddy/NameCheap etc [ or Route 53]
 
 ## Implementation Steps
 
@@ -67,13 +60,12 @@ Create your resume using HTML and CSS. Here's a basic structure to get you start
         <!-- Add your resume sections here -->
     </main>
     <footer>
-        <p>Visitor Count: <span id="visitor-count">0</span></p>
+        <p>&copy; 2024 Your Name</p>
     </footer>
-    <script src="script.js"></script>
 </body>
 </html>
 ```
-You can also download and edit the sites from https://nicepage.com/html-templates
+You can also download and edit templates from https://nicepage.com/html-templates
 
 ### Step 2: Set Up S3 Static Website Hosting
 
@@ -104,84 +96,43 @@ You can also download and edit the sites from https://nicepage.com/html-template
 3. Configure HTTPS settings
 4. Set the default root object to "index.html"
 
-### Step 4: Set Up Custom Domain with Route 53
+### Step 4: Set Up Custom Domain with GoDaddy and Route 53
 
-1. Register a domain in Route 53 (or transfer an existing domain)
-2. Create an A record that points to your CloudFront distribution
-3. Request an SSL certificate using AWS Certificate Manager
-4. Associate the SSL certificate with your CloudFront distribution
+1. In Route 53, create a public hosted zone for your domain
+2. Note the NS (Name Server) records provided by Route 53
+3. Log in to your GoDaddy account and update the domain's nameservers to use the ones provided by Route 53
+4. In Route 53, create an A record that points to your CloudFront distribution using "Alias to CloudFront distribution"
 
-### Step 5: Create DynamoDB Table
+### Step 5: Request SSL Certificate with AWS Certificate Manager
 
-1. Create a new DynamoDB table named "visitor-count"
-2. Set the partition key to "id" (String)
-3. Add an item with id "visitors" and a number attribute "count" set to 0
-
-### Step 6: Create Lambda Function
-
-Create a new Lambda function with the following Python code:
-
-```python
-import json
-import boto3
-
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('visitor-count')
-
-def lambda_handler(event, context):
-    response = table.get_item(Key={'id': 'visitors'})
-    count = response['Item']['count']
-    count += 1
-    
-    table.put_item(Item={'id': 'visitors', 'count': count})
-    
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': json.dumps({'count': count})
-    }
-```
-
-Ensure the Lambda function has the necessary permissions to read and write to the DynamoDB table.
-
-### Step 7: Set Up API Gateway
-
-1. Create a new REST API
-2. Create a GET method and integrate it with your Lambda function
-3. Enable CORS
-4. Deploy the API
-
-### Step 8: Add Visitor Counter to Your Resume
-
-Update your `script.js` file to fetch the visitor count from your API:
-
-```javascript
-async function getVisitorCount() {
-  const response = await fetch('YOUR_API_GATEWAY_URL');
-  const data = await response.json();
-  document.getElementById('visitor-count').innerText = data.count;
-}
-
-getVisitorCount();
-```
-
-Replace `'YOUR_API_GATEWAY_URL'` with the actual URL of your deployed API.
+1. Open the AWS Certificate Manager console
+2. Click "Request a certificate"
+3. Enter your domain name (and optionally, www subdomain)
+4. Choose DNS validation method
+5. Create the required CNAME records in Route 53 to validate domain ownership
+6. Wait for the certificate to be issued
+7. In your CloudFront distribution settings, update the SSL certificate to use the newly issued ACM certificate
 
 ## Testing
 
 - Manually test your website by accessing it through your custom domain
-- Use browser developer tools to ensure the visitor count is being fetched correctly
-- Test your Lambda function using the AWS Console
+- Ensure that HTTPS is working correctly
+- Use browser developer tools to ensure all resources are loading correctly
+- Test your website on different devices and browsers to ensure responsiveness
 
 ## Future Improvements
 
 - Implement CI/CD pipeline for automatic deployments
-- Use Terraform for provisioning
+- Use Terraform or CloudFormation for infrastructure as code
 - Add more interactive elements to the resume
 - Implement a blog section using a serverless CMS
+- Add a visitor counter using API Gateway, Lambda, and DynamoDB
 
 ## Resources
 
 - [AWS Documentation](https://docs.aws.amazon.com/)
+- [S3 Static Website Hosting](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html)
+- [CloudFront Documentation](https://docs.aws.amazon.com/cloudfront/index.html)
+- [Route 53 Documentation](https://docs.aws.amazon.com/route53/index.html)
+- [AWS Certificate Manager Documentation](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html)
+- [GoDaddy Help: Changing Nameservers](https://www.godaddy.com/help/change-nameservers-for-my-domains-664)
