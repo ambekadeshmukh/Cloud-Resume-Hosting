@@ -27,3 +27,4 @@ jobs:
         terraform apply -auto-approve
 
     - name: Deploy to S3
+      run: aws s3 sync . s3://iambeka.com --exclude "*" --include "*.html" --include "*.css" --include "*.js"
